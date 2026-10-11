@@ -2,7 +2,8 @@ import { boundaryAreaHectares, boundaryFromGeoJson, boundaryToGeoJson } from '@f
 import type { Activity, ActivityCost, AreaUnit, CostCategory, LngLat, SeasonStage } from '@farmwisr/core';
 import { randomUUID } from 'expo-crypto';
 import { useMemo } from 'react';
-import { getRow, useOffline, write } from './offline';
+import { getRow, queueUpload, useOffline, write } from './offline';
+import { keepPhoto } from './photoStore';
 
 export interface Farm {
   id: string;
@@ -51,6 +52,16 @@ interface ActivityRow {
   notes: string | null;
   harvest_quantity: number | string | null;
   harvest_unit: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  location_accuracy_m: number | null;
+  created_at: string;
+}
+
+interface PhotoRow {
+  id: string;
+  activity_id: string;
+  storage_path: string;
   created_at: string;
 }
 
@@ -82,6 +93,7 @@ export function useFarmData() {
     const seasons = snapshot.crop_seasons as unknown as Season[];
     const activityRows = snapshot.activities as unknown as ActivityRow[];
     const costRows = snapshot.activity_costs as unknown as CostRow[];
+    const photoRows = snapshot.activity_photos as unknown as PhotoRow[];
 
     // v1 has one farm per account.
     const farm = farms[0] ?? null;
@@ -114,6 +126,14 @@ export function useFarmData() {
             costs: costRows
               .filter((c) => c.activity_id === a.id)
               .map((c) => ({ category: c.category, amountMinor: Number(c.amount_minor) })),
+            location:
+              a.latitude === null || a.latitude === undefined || a.longitude === null || a.longitude === undefined
+                ? undefined
+                : { lat: Number(a.latitude), lng: Number(a.longitude), accuracyM: num(a.location_accuracy_m) ?? undefined },
+            photos: photoRows
+              .filter((p) => p.activity_id === a.id)
+              .sort((x, y) => x.created_at.localeCompare(y.created_at))
+              .map((p) => p.storage_path),
           })),
     };
   }, [snapshot, loaded, lastSyncedAt]);
@@ -162,7 +182,8 @@ export function createSeason(season: { fieldId: string; crop: string; variety: s
   return id;
 }
 
-export function createActivity(activity: {
+/** Saves an activity on the device, with its costs and photos, and queues it all for the server. */
+export async function createActivity(activity: {
   seasonId: string;
   stage: SeasonStage;
   type: string;
@@ -171,9 +192,20 @@ export function createActivity(activity: {
   costs: ActivityCost[];
   harvestQuantity: number | null;
   harvestUnit: string | null;
+  location: { lat: number; lng: number; accuracyM: number | null } | null;
+  /** Local URIs of prepared photos (see pickPhoto). */
+  photoUris: string[];
 }) {
   const id = randomUUID();
   const stamp = now();
+  // Keep the photos on the device first, so nothing is queued for a photo that failed to save.
+  const photoPaths: string[] = [];
+  for (const uri of activity.photoUris) {
+    const path = `${id}/${randomUUID()}.jpg`;
+    await keepPhoto(path, uri);
+    photoPaths.push(path);
+  }
+
   write('activities', {
     id,
     season_id: activity.seasonId,
@@ -183,12 +215,19 @@ export function createActivity(activity: {
     notes: activity.notes,
     harvest_quantity: activity.harvestQuantity,
     harvest_unit: activity.harvestUnit,
+    latitude: activity.location?.lat ?? null,
+    longitude: activity.location?.lng ?? null,
+    location_accuracy_m: activity.location?.accuracyM ?? null,
     created_at: stamp,
     updated_at: stamp,
   });
   // Queued after the activity, so they always reach the server after it.
   for (const cost of activity.costs) {
     write('activity_costs', { id: randomUUID(), activity_id: id, category: cost.category, amount_minor: cost.amountMinor });
+  }
+  for (const path of photoPaths) {
+    write('activity_photos', { id: randomUUID(), activity_id: id, storage_path: path, created_at: now() });
+    queueUpload(path);
   }
   return id;
 }

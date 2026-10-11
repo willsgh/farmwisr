@@ -1,6 +1,7 @@
 import { SEASON_STAGES, STAGE_LABELS, formatMoney, summariseSeason, toHectares } from '@farmwisr/core';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { PhotoThumb } from '../../components/PhotoThumb';
 import { Body, Card, Screen, Section, colors } from '../../components/ui';
 import { useFarmData } from '../../lib/data';
 
@@ -87,6 +88,19 @@ export default function SeasonScreen() {
               </Text>
             )}
             {a.notes && <Text style={styles.meta}>{a.notes}</Text>}
+            {a.location && (
+              <Text style={styles.meta}>
+                Logged at {a.location.lat.toFixed(5)}, {a.location.lng.toFixed(5)}
+                {a.location.accuracyM !== undefined ? ` (±${Math.round(a.location.accuracyM)} m)` : ''}
+              </Text>
+            )}
+            {a.photos && a.photos.length > 0 && (
+              <View style={styles.photos}>
+                {a.photos.map((path) => (
+                  <PhotoThumb key={path} path={path} />
+                ))}
+              </View>
+            )}
           </Card>
         );
       })}
@@ -100,6 +114,7 @@ const styles = StyleSheet.create({
   meta: { fontSize: 14, color: colors.muted },
   itemText: { fontSize: 17, color: colors.text },
   stages: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  photos: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
   stage: {
     flexBasis: '48%',
     flexGrow: 1,

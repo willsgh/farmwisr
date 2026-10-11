@@ -34,6 +34,14 @@
         {
           "locationWhenInUsePermission": "FarmWisr uses your location to map a field's boundary as you walk it."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "FarmWisr uses the camera to take photos of farm work.",
+          "photosPermission": "FarmWisr lets you attach photos of farm work to activities.",
+          "microphonePermission": false
+        }
       ]
     ]
   }

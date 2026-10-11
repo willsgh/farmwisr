@@ -4,7 +4,7 @@
  * keeping any local rows the server doesn't have yet.
  */
 
-export const SYNC_TABLES = ['farms', 'sites', 'fields', 'crop_seasons', 'activities', 'activity_costs'] as const;
+export const SYNC_TABLES = ['farms', 'sites', 'fields', 'crop_seasons', 'activities', 'activity_costs', 'activity_photos'] as const;
 export type SyncTable = (typeof SYNC_TABLES)[number];
 
 export type SyncRow = { id: string } & Record<string, unknown>;
@@ -16,7 +16,7 @@ export interface OutboxItem {
 }
 
 export function emptySnapshot(): Snapshot {
-  return { farms: [], sites: [], fields: [], crop_seasons: [], activities: [], activity_costs: [] };
+  return { farms: [], sites: [], fields: [], crop_seasons: [], activities: [], activity_costs: [], activity_photos: [] };
 }
 
 /** Inserts or replaces a row (matched by id) in the snapshot, without mutating the input. */
