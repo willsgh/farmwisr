@@ -1,5 +1,5 @@
-import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Body, Button, ErrorText, Screen, colors } from '../../components/ui';
 import { getMyFarm, getSite, listFields } from '../../lib/farms';
 import { formatArea } from '../../lib/format';
@@ -37,10 +37,12 @@ export default function SiteScreen() {
       <Text style={styles.section}>Fields</Text>
       {fields.length === 0 && <Body>No fields yet. Add the fields on this site.</Body>}
       {fields.map((field) => (
-        <View key={field.id} style={styles.item}>
-          <Text style={styles.itemText}>{field.name}</Text>
-          <Text style={styles.itemMeta}>{formatArea(field.area_hectares, farm.area_unit)}</Text>
-        </View>
+        <Link key={field.id} href={{ pathname: '/fields/[id]', params: { id: field.id } }} asChild>
+          <Pressable style={styles.item} accessibilityRole="button">
+            <Text style={styles.itemText}>{field.name}</Text>
+            <Text style={styles.itemMeta}>{formatArea(field.area_hectares, farm.area_unit)}</Text>
+          </Pressable>
+        </Link>
       ))}
       <Button
         title="Add a field"

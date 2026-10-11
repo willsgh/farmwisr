@@ -3,3 +3,5 @@ export * from './area';
 export * from './money';
 export * from './season';
 export * from './phone';
+export * from './activityTypes';
+export * from './dates';

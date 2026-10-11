@@ -25,7 +25,10 @@ function RootStack() {
         <Stack.Screen name="sites/new" options={{ title: 'Add a site' }} />
         <Stack.Screen name="sites/[id]" options={{ title: 'Site' }} />
         <Stack.Screen name="fields/new" options={{ title: 'Add a field' }} />
-        <Stack.Screen name="log/[stage]" options={{ title: 'Log activity' }} />
+        <Stack.Screen name="fields/[id]" options={{ title: 'Field' }} />
+        <Stack.Screen name="seasons/new" options={{ title: 'Start a season' }} />
+        <Stack.Screen name="seasons/[id]" options={{ title: 'Season' }} />
+        <Stack.Screen name="seasons/log" options={{ title: 'Log activity' }} />
       </Stack.Protected>
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="sign-in" options={{ title: 'Sign in' }} />
