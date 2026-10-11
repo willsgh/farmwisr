@@ -1,4 +1,3 @@
-import { SEASON_STAGES, STAGE_LABELS } from '@farmwisr/core';
 import { Link, router } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Body, Button, ErrorText, Heading, Screen, colors } from '../components/ui';
@@ -64,15 +63,6 @@ export default function Home() {
         variant="secondary"
         onPress={() => router.push({ pathname: '/sites/new', params: { farmId: farm.id } })}
       />
-
-      <Text style={styles.section}>Log a farm activity</Text>
-      {SEASON_STAGES.map((stage) => (
-        <Link key={stage} href={{ pathname: '/log/[stage]', params: { stage } }} asChild>
-          <Pressable style={styles.item} accessibilityRole="button">
-            <Text style={styles.itemText}>{STAGE_LABELS[stage]}</Text>
-          </Pressable>
-        </Link>
-      ))}
 
       <Button title="Sign out" variant="secondary" onPress={() => supabase!.auth.signOut()} />
     </Screen>

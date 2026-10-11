@@ -94,6 +94,44 @@ export function Choice<T extends string>({
   );
 }
 
+/** Wrapping quick-pick buttons; tapping the selected one again clears it. */
+export function Chips({
+  options,
+  value,
+  onChange,
+}: {
+  options: readonly string[];
+  value: string | null;
+  onChange: (value: string | null) => void;
+}) {
+  return (
+    <View style={styles.chips}>
+      {options.map((option) => {
+        const on = option === value;
+        return (
+          <Pressable
+            key={option}
+            onPress={() => onChange(on ? null : option)}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: on }}
+            style={[styles.chip, on && styles.choiceItemOn]}
+          >
+            <Text style={[styles.choiceText, on && styles.choiceTextOn]}>{option}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+export function Section({ children }: { children: ReactNode }) {
+  return <Text style={styles.section}>{children}</Text>;
+}
+
+export function Card({ children }: { children: ReactNode }) {
+  return <View style={styles.card}>{children}</View>;
+}
+
 const styles = StyleSheet.create({
   screen: { padding: 16, gap: 12, maxWidth: 640, width: '100%', alignSelf: 'center' },
   heading: { fontSize: 22, fontWeight: '600', color: colors.text },
@@ -120,4 +158,8 @@ const styles = StyleSheet.create({
   choiceItemOn: { borderColor: colors.primary, backgroundColor: colors.surface },
   choiceText: { fontSize: 16, color: colors.muted },
   choiceTextOn: { color: colors.primary, fontWeight: '600' },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1, borderColor: colors.border },
+  section: { fontSize: 18, fontWeight: '600', marginTop: 12, color: colors.text },
+  card: { padding: 16, borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, gap: 4 },
 });
