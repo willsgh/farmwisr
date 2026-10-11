@@ -2,7 +2,7 @@
 
 FarmWisr is an open-source farm management app for farmers, on Android phones and in the web browser. Farmers record every activity from land preparation to harvest, and FarmWisr turns those records into cost, yield and profit per field and season.
 
-- **Launch market:** Ghana, then other African countries
+- **Launch market:** Small holder  and commercial farmers across Africa
 - **Farmers:** smallholders and mid-sized commercial farms
 - **Scope (v1):** crops only, including a multi-year view for tree crops such as cocoa
 - **Language:** English
