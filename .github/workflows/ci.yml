@@ -36,8 +36,13 @@ jobs:
       PGHOST: localhost
       PGUSER: postgres
       PGPASSWORD: postgres
+      PGDATABASE: farmwisr
     steps:
       - uses: actions/checkout@v4
+      # The postgis image pre-installs PostGIS in the public schema of its default databases;
+      # start from template0 so the migration installs it into `extensions`, as on Supabase.
+      - name: Create a clean database
+        run: createdb -T template0 farmwisr
       - name: Apply migrations
         run: |
           psql -v ON_ERROR_STOP=1 -f supabase/tests/ci_auth_stub.sql
