@@ -29,7 +29,15 @@ export default function FieldScreen() {
   return (
     <Screen>
       <Stack.Screen options={{ title: field.name }} />
-      <Body>{formatArea(field.area_hectares, farm.area_unit)}</Body>
+      <Body>
+        {formatArea(field.area_hectares, farm.area_unit)}
+        {field.boundary.length > 0 ? ' · mapped' : ''}
+      </Body>
+      <Button
+        title={field.boundary.length > 0 ? 'Remap the boundary' : 'Map the boundary'}
+        variant="secondary"
+        onPress={() => router.push({ pathname: '/fields/map', params: { id: field.id } })}
+      />
 
       <Section>Crop seasons</Section>
       {seasons.length === 0 && <Body>Start a season when you begin working this field for a crop.</Body>}

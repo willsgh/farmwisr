@@ -25,6 +25,24 @@ do $$ begin
   assert (select cost_per_hectare_minor from public.season_summaries) = 20000, 'cost per hectare should be 20000';
 end $$;
 
+-- Mapping a field: the app upserts the whole row with the boundary as GeoJSON; PostGIS derives the shape.
+insert into public.fields (id, site_id, name, area_hectares, boundary_geojson)
+  select 'cccccccc-0000-0000-0000-000000000001', id, 'Mapped plot', 1.14327,
+    '{"type":"Polygon","coordinates":[[[-1.6244,6.6885],[-1.6235,6.6885],[-1.6233,6.6893],[-1.6246,6.6894],[-1.6244,6.6885]]]}'
+  from public.sites where name = 'Ejura site'
+  on conflict (id) do update set boundary_geojson = excluded.boundary_geojson, area_hectares = excluded.area_hectares;
+
+do $$ begin
+  -- The same ring is used in packages/core geo.test.ts, so app and database agree on area.
+  assert abs(extensions.st_area((select boundary from public.fields where name = 'Mapped plot')) / 10000 - 1.14327) < 0.0001,
+    'PostGIS area of the mapped boundary should be 1.14327 ha';
+end $$;
+
+update public.fields set boundary_geojson = null where name = 'Mapped plot';
+do $$ begin
+  assert (select boundary from public.fields where name = 'Mapped plot') is null, 'clearing the GeoJSON clears the boundary';
+end $$;
+
 set request.uid = '00000000-0000-0000-0000-000000000002';
 do $$ begin
   assert (select count(*) from public.farms) = 0, 'another user must not see the farm';

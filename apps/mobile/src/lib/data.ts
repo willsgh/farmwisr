@@ -1,7 +1,8 @@
-import type { Activity, ActivityCost, AreaUnit, CostCategory, SeasonStage } from '@farmwisr/core';
+import { boundaryAreaHectares, boundaryFromGeoJson, boundaryToGeoJson } from '@farmwisr/core';
+import type { Activity, ActivityCost, AreaUnit, CostCategory, LngLat, SeasonStage } from '@farmwisr/core';
 import { randomUUID } from 'expo-crypto';
 import { useMemo } from 'react';
-import { useOffline, write } from './offline';
+import { getRow, useOffline, write } from './offline';
 
 export interface Farm {
   id: string;
@@ -24,6 +25,12 @@ export interface Field {
   site_id: string;
   name: string;
   area_hectares: number | null;
+  /** Corners of the mapped boundary; empty if the field hasn't been mapped. */
+  boundary: LngLat[];
+}
+
+interface FieldRow extends Omit<Field, 'boundary'> {
+  boundary_geojson: unknown;
 }
 
 export interface Season {
@@ -65,7 +72,13 @@ export function useFarmData() {
   return useMemo(() => {
     const farms = (snapshot.farms as unknown as Farm[]).slice().sort((a, b) => a.created_at.localeCompare(b.created_at));
     const sites = snapshot.sites as unknown as Site[];
-    const fields = (snapshot.fields as unknown as Field[]).map((f) => ({ ...f, area_hectares: num(f.area_hectares) }));
+    const fields: Field[] = (snapshot.fields as unknown as FieldRow[]).map((f) => ({
+      id: f.id,
+      site_id: f.site_id,
+      name: f.name,
+      area_hectares: num(f.area_hectares),
+      boundary: boundaryFromGeoJson(f.boundary_geojson),
+    }));
     const seasons = snapshot.crop_seasons as unknown as Season[];
     const activityRows = snapshot.activities as unknown as ActivityRow[];
     const costRows = snapshot.activity_costs as unknown as CostRow[];
@@ -123,6 +136,16 @@ export function createField(siteId: string, name: string, areaHectares: number |
   const id = randomUUID();
   write('fields', { id, site_id: siteId, name, area_hectares: areaHectares, created_at: now() });
   return id;
+}
+
+/** Saves a walked or drawn boundary, and sets the field's area to the mapped area. */
+export function saveFieldBoundary(fieldId: string, points: LngLat[]) {
+  const current = getRow('fields', fieldId);
+  if (!current) return;
+  // The whole row is sent, since the server upserts it; `boundary` is derived there from the GeoJSON.
+  const row = { ...current };
+  delete row.boundary;
+  write('fields', { ...row, boundary_geojson: boundaryToGeoJson(points), area_hectares: boundaryAreaHectares(points) });
 }
 
 export function createSeason(season: { fieldId: string; crop: string; variety: string | null; startDate: string }) {

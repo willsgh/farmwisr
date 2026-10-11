@@ -6,3 +6,4 @@ node_modules/
 coverage/
 supabase/.temp/
 supabase/.branches/
+apps/mobile/public/maplibre-gl-worker.mjs
