@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SYNC_TABLES, applyLocal, emptySnapshot, mergePulled } from '@farmwisr/core';
 import type { OutboxItem, Snapshot, SyncRow, SyncTable } from '@farmwisr/core';
 import { useSyncExternalStore } from 'react';
+import { photoUploaded, readPhoto } from './photoStore';
+import { PHOTO_BUCKET } from './photos';
 import { supabase } from './supabase';
 
 /**
@@ -14,6 +16,8 @@ export interface OfflineState {
   loaded: boolean;
   snapshot: Snapshot;
   outbox: OutboxItem[];
+  /** Storage paths of photos kept on the device and not yet uploaded. */
+  uploads: string[];
   syncing: boolean;
   /** Set when the server rejected a change (not when the device is simply offline). */
   error: string | null;
@@ -25,6 +29,7 @@ const initialState: OfflineState = {
   loaded: false,
   snapshot: emptySnapshot(),
   outbox: [],
+  uploads: [],
   syncing: false,
   error: null,
   lastSyncedAt: null,
@@ -51,21 +56,22 @@ const storageKey = (userId: string) => `farmwisr:offline:${userId}`;
 
 async function persist() {
   if (!state.userId) return;
-  const { snapshot, outbox, lastSyncedAt } = state;
-  await AsyncStorage.setItem(storageKey(state.userId), JSON.stringify({ snapshot, outbox, lastSyncedAt }));
+  const { snapshot, outbox, uploads, lastSyncedAt } = state;
+  await AsyncStorage.setItem(storageKey(state.userId), JSON.stringify({ snapshot, outbox, uploads, lastSyncedAt }));
 }
 
 /** Loads this user's saved records from the device, then syncs. Queued changes survive app restarts. */
 export async function openStore(userId: string) {
   if (state.userId === userId) return;
   const saved = await AsyncStorage.getItem(storageKey(userId));
-  const parsed = saved ? (JSON.parse(saved) as Pick<OfflineState, 'snapshot' | 'outbox' | 'lastSyncedAt'>) : null;
+  const parsed = saved ? (JSON.parse(saved) as Pick<OfflineState, 'snapshot' | 'outbox' | 'uploads' | 'lastSyncedAt'>) : null;
   setState({
     ...initialState,
     userId,
     loaded: true,
     snapshot: { ...emptySnapshot(), ...parsed?.snapshot },
     outbox: parsed?.outbox ?? [],
+    uploads: parsed?.uploads ?? [],
     lastSyncedAt: parsed?.lastSyncedAt ?? null,
   });
   void sync();
@@ -80,6 +86,13 @@ export function closeStore() {
 export function write(table: SyncTable, row: SyncRow) {
   const item = { table, row };
   setState({ snapshot: applyLocal(state.snapshot, item), outbox: [...state.outbox, item] });
+  void persist();
+  void sync();
+}
+
+/** Queues a photo already kept on the device (see photoStore) for upload. */
+export function queueUpload(path: string) {
+  setState({ uploads: [...state.uploads, path] });
   void persist();
   void sync();
 }
@@ -107,6 +120,23 @@ export async function sync() {
         return;
       }
       setState({ outbox: state.outbox.slice(1), error: null });
+      await persist();
+    }
+
+    // Then upload photos. Their records went first, so the server can check the farmer owns the activity.
+    while (state.uploads.length > 0 && state.userId === userId) {
+      const [path] = state.uploads;
+      const bytes = await readPhoto(path);
+      if (bytes) {
+        const { error } = await supabase.storage.from(PHOTO_BUCKET).upload(path, bytes, { contentType: 'image/jpeg', upsert: true });
+        if (error) {
+          // Storage reports an HTTP status when the server answered; without one, the device is offline.
+          if ('status' in error && error.status) setState({ error: error.message });
+          return;
+        }
+        await photoUploaded(path);
+      }
+      setState({ uploads: state.uploads.slice(1), error: null });
       await persist();
     }
 

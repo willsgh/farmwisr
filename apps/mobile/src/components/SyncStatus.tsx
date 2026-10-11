@@ -32,10 +32,10 @@ export function useSyncLifecycle() {
 
 /** A slim bar telling the farmer that changes are saved on the device and waiting to sync. */
 export function SyncStatus() {
-  const { outbox, error, loaded } = useOffline();
-  if (!loaded || (outbox.length === 0 && !error)) return null;
+  const { outbox, uploads, error, loaded } = useOffline();
+  const waiting = outbox.length + uploads.length;
+  if (!loaded || (waiting === 0 && !error)) return null;
 
-  const waiting = outbox.length;
   const text = error
     ? `Could not sync: ${error}`
     : `Saved on this device. ${waiting} ${waiting === 1 ? 'change' : 'changes'} will sync when you're online.`;

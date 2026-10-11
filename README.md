@@ -28,6 +28,10 @@ The app works without a signal. Every record is saved on the device first (`apps
 
 A field's boundary can be walked (tap "Mark corner" at each corner; the phone's GPS records it) or drawn by tapping corners on a satellite map. The area is calculated on the device and saved as the field's area. The boundary is stored as GeoJSON in `fields.boundary_geojson`, and the database derives the PostGIS `fields.boundary` from it. Maps use MapLibre (MapLibre Native on phones, MapLibre GL JS on the web). Satellite tiles default to Esri World Imagery for development; set `EXPO_PUBLIC_MAP_TILES_URL` for production.
 
+## Photos and location on activities
+
+When logging an activity, the farmer can attach up to five photos (scaled to 1280 px JPEGs) and add their GPS location. Photos are kept on the device, and uploaded to the private Supabase Storage bucket `activity-photos` (at `<activity id>/<photo id>.jpg`) after the activity reaches the server. Storage policies only let a user read and write photos under their own activities. On phones the device copy is kept for viewing offline; in the browser it is removed after upload.
+
 ## Getting started
 
 Requires Node.js 22.

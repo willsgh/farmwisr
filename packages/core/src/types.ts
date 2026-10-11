@@ -49,6 +49,10 @@ export interface Activity {
   /** Quantity harvested, only on harvest activities. */
   harvestQuantity?: number;
   harvestUnit?: string;
+  /** Where the activity was logged, if the farmer added their location. */
+  location?: { lat: number; lng: number; accuracyM?: number };
+  /** Storage paths of photos taken for this activity. */
+  photos?: string[];
 }
 
 export interface CropSeason {

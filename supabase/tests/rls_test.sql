@@ -43,6 +43,26 @@ do $$ begin
   assert (select boundary from public.fields where name = 'Mapped plot') is null, 'clearing the GeoJSON clears the boundary';
 end $$;
 
+-- Location and photos on an activity.
+update public.activities set latitude = 6.6885, longitude = -1.6244, location_accuracy_m = 5 where type = 'ploughing';
+insert into public.activity_photos (activity_id, storage_path)
+  select id, id::text || '/dddddddd-0000-0000-0000-000000000001.jpg' from public.activities where type = 'ploughing';
+insert into storage.objects (bucket_id, name)
+  select 'activity-photos', id::text || '/dddddddd-0000-0000-0000-000000000001.jpg' from public.activities where type = 'ploughing';
+
+do $$ begin
+  assert (select extensions.st_y(location::extensions.geometry) from public.activities where type = 'ploughing') = 6.6885,
+    'the activity location is derived from latitude and longitude';
+  assert (select count(*) from public.activity_photos) = 1, 'the owner sees their photo record';
+  assert (select count(*) from storage.objects) = 1, 'the owner sees their photo file';
+  begin
+    insert into storage.objects (bucket_id, name) values ('activity-photos', 'not-an-activity/x.jpg');
+    raise exception 'a photo must be stored under an activity id';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+do $$ begin perform set_config('test.activity_id', (select id::text from public.activities where type = 'ploughing'), false); end $$;
 set request.uid = '00000000-0000-0000-0000-000000000002';
 do $$ begin
   assert (select count(*) from public.farms) = 0, 'another user must not see the farm';
@@ -50,6 +70,8 @@ do $$ begin
   assert (select count(*) from public.fields) = 0, 'another user must not see fields';
   assert (select count(*) from public.activities) = 0, 'another user must not see activities';
   assert (select count(*) from public.season_summaries) = 0, 'another user must not see summaries';
+  assert (select count(*) from public.activity_photos) = 0, 'another user must not see photo records';
+  assert (select count(*) from storage.objects) = 0, 'another user must not see photo files';
 end $$;
 
 -- Another user cannot add a site to someone else's farm.
@@ -57,6 +79,15 @@ do $$ begin
   begin
     insert into public.sites (farm_id, name) values ('aaaaaaaa-0000-0000-0000-000000000001', 'intruder');
     raise exception 'another user must not add a site to the farm';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+-- Another user cannot upload a photo under someone else's activity.
+do $$ begin
+  begin
+    insert into storage.objects (bucket_id, name) values ('activity-photos', current_setting('test.activity_id') || '/intruder.jpg');
+    raise exception 'another user must not upload under the activity';
   exception when insufficient_privilege then null;
   end;
 end $$;
