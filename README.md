@@ -35,4 +35,6 @@ cp .env.example .env.local   # add your Supabase URL and anon key
 npx expo start               # press a for Android, w for web
 ```
 
+Sign-in is by phone number with an SMS code. In your Supabase project, turn on the Phone provider under Authentication and connect an SMS provider (for example Twilio). While developing, you can add test phone numbers with fixed codes there instead of sending real SMS.
+
 To set up the database, create a Supabase project and apply `supabase/migrations` with the [Supabase CLI](https://supabase.com/docs/guides/cli) (`supabase link` then `supabase db push`).
