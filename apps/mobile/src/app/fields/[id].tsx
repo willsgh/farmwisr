@@ -1,26 +1,16 @@
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Body, Button, ErrorText, Screen, Section, colors } from '../../components/ui';
-import { getMyFarm } from '../../lib/farms';
+import { Body, Button, Screen, Section, colors } from '../../components/ui';
+import { useFarmData } from '../../lib/data';
 import { formatArea } from '../../lib/format';
-import { getField, listSeasons } from '../../lib/seasons';
-import { useFocusLoad } from '../../lib/useFocusLoad';
 
 export default function FieldScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data, error } = useFocusLoad(async () => {
-    const [farm, field, seasons] = await Promise.all([getMyFarm(), getField(id), listSeasons(id)]);
-    return { farm, field, seasons };
-  }, id);
+  const data = useFarmData();
+  const { farm } = data;
+  const field = data.field(id);
 
-  if (error) {
-    return (
-      <Screen>
-        <ErrorText>{error}</ErrorText>
-      </Screen>
-    );
-  }
-  if (!data || !data.farm) {
+  if (!data.loaded) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.primary} />
@@ -28,7 +18,14 @@ export default function FieldScreen() {
     );
   }
 
-  const { farm, field, seasons } = data;
+  if (!farm || !field) {
+    return (
+      <Screen>
+        <Body>This field is not on this device.</Body>
+      </Screen>
+    );
+  }
+  const seasons = data.seasonsOf(field.id);
   return (
     <Screen>
       <Stack.Screen options={{ title: field.name }} />

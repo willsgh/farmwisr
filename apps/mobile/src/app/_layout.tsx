@@ -1,12 +1,14 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
+import { SyncStatus, useSyncLifecycle } from '../components/SyncStatus';
 import { Body, Heading, Screen, colors } from '../components/ui';
 import { AuthProvider, useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 
 function RootStack() {
   const { session, loading } = useAuth();
+  useSyncLifecycle();
 
   if (loading) {
     return (
@@ -18,6 +20,7 @@ function RootStack() {
 
   const signedIn = session !== null;
   return (
+    <View style={{ flex: 1 }}>
     <Stack screenOptions={{ headerTintColor: colors.primary }}>
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="index" options={{ title: 'FarmWisr' }} />
@@ -34,6 +37,8 @@ function RootStack() {
         <Stack.Screen name="sign-in" options={{ title: 'Sign in' }} />
       </Stack.Protected>
     </Stack>
+    {signedIn && <SyncStatus />}
+    </View>
   );
 }
 

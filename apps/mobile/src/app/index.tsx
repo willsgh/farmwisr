@@ -1,25 +1,13 @@
 import { Link, router } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Body, Button, ErrorText, Heading, Screen, colors } from '../components/ui';
-import { getMyFarm, listSites } from '../lib/farms';
+import { Body, Button, Heading, Screen, colors } from '../components/ui';
+import { useFarmData } from '../lib/data';
 import { supabase } from '../lib/supabase';
-import { useFocusLoad } from '../lib/useFocusLoad';
 
 export default function Home() {
-  const { data, error } = useFocusLoad(async () => {
-    const farm = await getMyFarm();
-    return { farm, sites: farm ? await listSites(farm.id) : [] };
-  });
+  const data = useFarmData();
 
-  if (error) {
-    return (
-      <Screen>
-        <ErrorText>{error}</ErrorText>
-      </Screen>
-    );
-  }
-
-  if (!data) {
+  if (!data.loaded) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.primary} />
@@ -27,7 +15,17 @@ export default function Home() {
     );
   }
 
-  const { farm, sites } = data;
+  const { farm } = data;
+  if (!farm && !data.hasSynced) {
+    // First sign-in on this device: wait for the farm to download rather than offer to create a duplicate.
+    return (
+      <Screen>
+        <ActivityIndicator color={colors.primary} />
+        <Body>Loading your farm. The first time you sign in on a device, this needs an internet connection.</Body>
+      </Screen>
+    );
+  }
+
   if (!farm) {
     return (
       <Screen>
@@ -39,6 +37,7 @@ export default function Home() {
     );
   }
 
+  const sites = data.sitesOf(farm.id);
   return (
     <Screen>
       <Heading>{farm.name}</Heading>
@@ -46,7 +45,7 @@ export default function Home() {
       <Text style={styles.section}>Sites</Text>
       {sites.length === 0 && <Body>Add each piece of land you farm as a site, then add its fields.</Body>}
       {sites.map((site) => {
-        const fieldCount = site.fields[0]?.count ?? 0;
+        const fieldCount = data.fieldsOf(site.id).length;
         return (
           <Link key={site.id} href={{ pathname: '/sites/[id]', params: { id: site.id } }} asChild>
             <Pressable style={styles.item} accessibilityRole="button">

@@ -3,17 +3,16 @@ import type { AreaUnit } from '@farmwisr/core';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Body, Button, Choice, ErrorText, Field, Screen } from '../../components/ui';
-import { createField } from '../../lib/farms';
+import { createField } from '../../lib/data';
 
 export default function NewField() {
   const { siteId, unit: farmUnit } = useLocalSearchParams<{ siteId: string; unit?: AreaUnit }>();
   const [name, setName] = useState('');
   const [area, setArea] = useState('');
   const [unit, setUnit] = useState<AreaUnit>(farmUnit === 'hectare' ? 'hectare' : 'acre');
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function save() {
+  function save() {
     if (!name.trim()) {
       setError('Give the field a name.');
       return;
@@ -23,15 +22,9 @@ export default function NewField() {
       setError('Enter the area as a number, for example 2.5.');
       return;
     }
-    setBusy(true);
-    setError(null);
-    try {
-      await createField(siteId, name.trim(), areaValue === null ? null : toHectares(areaValue, unit));
-      router.back();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save the field.');
-      setBusy(false);
-    }
+    // Saved on the device straight away; it syncs to the server when there is signal.
+    createField(siteId, name.trim(), areaValue === null ? null : toHectares(areaValue, unit));
+    router.back();
   }
 
   return (
@@ -48,7 +41,7 @@ export default function NewField() {
       />
       <Body>You can map the field boundary later.</Body>
       {error && <ErrorText>{error}</ErrorText>}
-      <Button title="Save field" onPress={save} busy={busy} />
+      <Button title="Save field" onPress={save} />
     </Screen>
   );
 }

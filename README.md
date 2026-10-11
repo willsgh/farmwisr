@@ -20,6 +20,10 @@ FarmWisr is free software, licensed under the [GNU Affero General Public License
 | `supabase/migrations` | Database schema (Postgres + PostGIS) with row-level security per farm |
 | `supabase/tests` | Database checks run in CI |
 
+## Offline use
+
+The app works without a signal. Every record is saved on the device first (`apps/mobile/src/lib/offline.ts`) and queued; the queue is sent to Supabase in order whenever the device is online (on a 30-second timer, when the app comes to the foreground, and when the browser reports it is back online), then the device's copy is refreshed from the server. A bar at the bottom of the screen shows how many changes are waiting.
+
 ## Getting started
 
 Requires Node.js 22.

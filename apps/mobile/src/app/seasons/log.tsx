@@ -10,7 +10,7 @@ import type { ActivityCost, CostCategory, SeasonStage } from '@farmwisr/core';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Body, Button, Chips, ErrorText, Field, Screen, Section } from '../../components/ui';
-import { createActivity } from '../../lib/seasons';
+import { createActivity } from '../../lib/data';
 
 const COST_FIELDS: { category: CostCategory; label: string; placeholder: string }[] = [
   { category: 'inputs', label: 'Inputs (seed, fertiliser, chemicals)', placeholder: '0.00' },
@@ -31,7 +31,6 @@ export default function LogActivity() {
   const [quantity, setQuantity] = useState('');
   const [harvestUnit, setHarvestUnit] = useState<string | null>('bag');
   const [notes, setNotes] = useState('');
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!STAGE_LABELS[stage]) {
@@ -42,7 +41,7 @@ export default function LogActivity() {
     );
   }
 
-  async function save() {
+  function save() {
     const type = pickedType ?? otherType.trim();
     if (!type) {
       setError('Pick or type what was done.');
@@ -78,24 +77,18 @@ export default function LogActivity() {
       }
     }
 
-    setBusy(true);
-    setError(null);
-    try {
-      await createActivity({
-        seasonId,
-        stage,
-        type,
-        date,
-        notes: notes.trim() || null,
-        costs: parsedCosts,
-        harvestQuantity,
-        harvestUnit: harvestQuantity === null ? null : harvestUnit,
-      });
-      router.back();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save the activity.');
-      setBusy(false);
-    }
+    // Saved on the device straight away; it syncs to the server when there is signal.
+    createActivity({
+      seasonId,
+      stage,
+      type,
+      date,
+      notes: notes.trim() || null,
+      costs: parsedCosts,
+      harvestQuantity,
+      harvestUnit: harvestQuantity === null ? null : harvestUnit,
+    });
+    router.back();
   }
 
   return (
@@ -135,7 +128,7 @@ export default function LogActivity() {
 
       <Field label="Notes (optional)" value={notes} onChangeText={setNotes} multiline />
       {error && <ErrorText>{error}</ErrorText>}
-      <Button title="Save activity" onPress={save} busy={busy} />
+      <Button title="Save activity" onPress={save} />
     </Screen>
   );
 }

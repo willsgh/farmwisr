@@ -5,3 +5,4 @@ export * from './season';
 export * from './phone';
 export * from './activityTypes';
 export * from './dates';
+export * from './sync';
