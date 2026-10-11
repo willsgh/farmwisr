@@ -39,7 +39,7 @@ export default function NewField() {
         value={unit}
         onChange={setUnit}
       />
-      <Body>You can map the field boundary later.</Body>
+      <Body>You can map the field boundary later, by walking it or drawing it on a map. That sets the area for you.</Body>
       {error && <ErrorText>{error}</ErrorText>}
       <Button title="Save field" onPress={save} />
     </Screen>

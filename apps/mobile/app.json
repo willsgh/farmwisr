@@ -27,7 +27,14 @@
     },
     "scheme": "farmwisr",
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "@maplibre/maplibre-react-native",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "FarmWisr uses your location to map a field's boundary as you walk it."
+        }
+      ]
     ]
   }
 }

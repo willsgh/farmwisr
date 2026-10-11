@@ -24,6 +24,10 @@ FarmWisr is free software, licensed under the [GNU Affero General Public License
 
 The app works without a signal. Every record is saved on the device first (`apps/mobile/src/lib/offline.ts`) and queued; the queue is sent to Supabase in order whenever the device is online (on a 30-second timer, when the app comes to the foreground, and when the browser reports it is back online), then the device's copy is refreshed from the server. A bar at the bottom of the screen shows how many changes are waiting.
 
+## Field mapping
+
+A field's boundary can be walked (tap "Mark corner" at each corner; the phone's GPS records it) or drawn by tapping corners on a satellite map. The area is calculated on the device and saved as the field's area. The boundary is stored as GeoJSON in `fields.boundary_geojson`, and the database derives the PostGIS `fields.boundary` from it. Maps use MapLibre (MapLibre Native on phones, MapLibre GL JS on the web). Satellite tiles default to Esri World Imagery for development; set `EXPO_PUBLIC_MAP_TILES_URL` for production.
+
 ## Getting started
 
 Requires Node.js 22.
@@ -36,7 +40,8 @@ npm run lint
 
 cd apps/mobile
 cp .env.example .env.local   # add your Supabase URL and anon key
-npx expo start               # press a for Android, w for web
+npx expo start               # press w for web
+npx expo run:android         # phones need a development build, since maps use native code (not Expo Go)
 ```
 
 Sign-in is by phone number with an SMS code. In your Supabase project, turn on the Phone provider under Authentication and connect an SMS provider (for example Twilio). While developing, you can add test phone numbers with fixed codes there instead of sending real SMS.

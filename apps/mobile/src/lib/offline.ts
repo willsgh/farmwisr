@@ -84,6 +84,11 @@ export function write(table: SyncTable, row: SyncRow) {
   void sync();
 }
 
+/** The device's current copy of a row, or null. */
+export function getRow(table: SyncTable, id: string): SyncRow | null {
+  return state.snapshot[table].find((r) => r.id === id) ?? null;
+}
+
 // supabase-js reports a failed request (no connection) as an error without a Postgres/PostgREST code.
 const isOfflineError = (error: { code?: string }) => !error.code;
 

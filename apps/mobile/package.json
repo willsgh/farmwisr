@@ -5,14 +5,17 @@
   "dependencies": {
     "@expo/metro-runtime": "~57.0.16",
     "@farmwisr/core": "*",
+    "@maplibre/maplibre-react-native": "^11.5.0",
     "@react-native-async-storage/async-storage": "~2.2.0",
     "@supabase/supabase-js": "^2.117.3",
     "expo": "~57.0.27",
     "expo-constants": "~57.0.21",
     "expo-crypto": "~57.0.3",
     "expo-linking": "~57.0.12",
+    "expo-location": "~57.0.20",
     "expo-router": "~57.0.25",
     "expo-status-bar": "~57.0.1",
+    "maplibre-gl": "^6.13.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.3",
@@ -32,7 +35,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "postinstall": "node scripts/copy-map-worker.mjs"
   },
   "private": true,
   "license": "AGPL-3.0-only"
