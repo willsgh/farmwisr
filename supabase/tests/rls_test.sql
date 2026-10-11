@@ -5,8 +5,9 @@ grant all on all tables in schema public to authenticated;
 
 set role authenticated;
 set request.uid = '00000000-0000-0000-0000-000000000001';
-insert into public.farms (name) values ('Test farm');
-insert into public.fields (farm_id, name, area_hectares) select id, 'North plot', 2 from public.farms;
+insert into public.farms (id, name) values ('aaaaaaaa-0000-0000-0000-000000000001', 'Test farm');
+insert into public.sites (farm_id, name, community) select id, 'Ejura site', 'Ejura' from public.farms;
+insert into public.fields (site_id, name, area_hectares) select id, 'North plot', 2 from public.sites;
 insert into public.crop_seasons (field_id, crop, start_date) select id, 'maize', '2026-04-01' from public.fields;
 insert into public.activities (season_id, stage, type, activity_date) select id, 'land_preparation', 'ploughing', '2026-04-02' from public.crop_seasons;
 insert into public.activity_costs (activity_id, category, amount_minor) select id, 'equipment', 30000 from public.activities;
@@ -20,6 +21,17 @@ end $$;
 set request.uid = '00000000-0000-0000-0000-000000000002';
 do $$ begin
   assert (select count(*) from public.farms) = 0, 'another user must not see the farm';
+  assert (select count(*) from public.sites) = 0, 'another user must not see sites';
+  assert (select count(*) from public.fields) = 0, 'another user must not see fields';
   assert (select count(*) from public.activities) = 0, 'another user must not see activities';
   assert (select count(*) from public.season_summaries) = 0, 'another user must not see summaries';
+end $$;
+
+-- Another user cannot add a site to someone else's farm.
+do $$ begin
+  begin
+    insert into public.sites (farm_id, name) values ('aaaaaaaa-0000-0000-0000-000000000001', 'intruder');
+    raise exception 'another user must not add a site to the farm';
+  exception when insufficient_privilege then null;
+  end;
 end $$;

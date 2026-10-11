@@ -6,7 +6,7 @@ import { Body, Button, Choice, ErrorText, Field, Screen } from '../../components
 import { createField } from '../../lib/farms';
 
 export default function NewField() {
-  const { farmId, unit: farmUnit } = useLocalSearchParams<{ farmId: string; unit?: AreaUnit }>();
+  const { siteId, unit: farmUnit } = useLocalSearchParams<{ siteId: string; unit?: AreaUnit }>();
   const [name, setName] = useState('');
   const [area, setArea] = useState('');
   const [unit, setUnit] = useState<AreaUnit>(farmUnit === 'hectare' ? 'hectare' : 'acre');
@@ -26,7 +26,7 @@ export default function NewField() {
     setBusy(true);
     setError(null);
     try {
-      await createField(farmId, name.trim(), areaValue === null ? null : toHectares(areaValue, unit));
+      await createField(siteId, name.trim(), areaValue === null ? null : toHectares(areaValue, unit));
       router.back();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save the field.');

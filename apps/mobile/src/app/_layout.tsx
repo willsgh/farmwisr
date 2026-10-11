@@ -22,6 +22,8 @@ function RootStack() {
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="index" options={{ title: 'FarmWisr' }} />
         <Stack.Screen name="farm/new" options={{ title: 'Set up your farm' }} />
+        <Stack.Screen name="sites/new" options={{ title: 'Add a site' }} />
+        <Stack.Screen name="sites/[id]" options={{ title: 'Site' }} />
         <Stack.Screen name="fields/new" options={{ title: 'Add a field' }} />
         <Stack.Screen name="log/[stage]" options={{ title: 'Log activity' }} />
       </Stack.Protected>

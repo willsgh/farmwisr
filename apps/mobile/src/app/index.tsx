@@ -1,54 +1,16 @@
-import { SEASON_STAGES, STAGE_LABELS, fromHectares } from '@farmwisr/core';
-import { Link, router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { SEASON_STAGES, STAGE_LABELS } from '@farmwisr/core';
+import { Link, router } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Body, Button, ErrorText, Heading, Screen, colors } from '../components/ui';
-import { getMyFarm, listFields } from '../lib/farms';
-import type { Farm, Field } from '../lib/farms';
+import { getMyFarm, listSites } from '../lib/farms';
 import { supabase } from '../lib/supabase';
-
-function formatArea(hectares: number | null, farm: Farm): string {
-  if (hectares === null) return 'Area not set';
-  const value = fromHectares(hectares, farm.area_unit);
-  return `${value.toFixed(2)} ${farm.area_unit === 'acre' ? 'acres' : 'ha'}`;
-}
+import { useFocusLoad } from '../lib/useFocusLoad';
 
 export default function Home() {
-  const [farm, setFarm] = useState<Farm | null>(null);
-  const [fields, setFields] = useState<Field[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-      (async () => {
-        try {
-          const myFarm = await getMyFarm();
-          const myFields = myFarm ? await listFields(myFarm.id) : [];
-          if (!active) return;
-          setFarm(myFarm);
-          setFields(myFields);
-          setError(null);
-        } catch (e) {
-          if (active) setError(e instanceof Error ? e.message : 'Could not load your farm.');
-        } finally {
-          if (active) setLoading(false);
-        }
-      })();
-      return () => {
-        active = false;
-      };
-    }, []),
-  );
-
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
-  }
+  const { data, error } = useFocusLoad(async () => {
+    const farm = await getMyFarm();
+    return { farm, sites: farm ? await listSites(farm.id) : [] };
+  });
 
   if (error) {
     return (
@@ -58,6 +20,15 @@ export default function Home() {
     );
   }
 
+  if (!data) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
+
+  const { farm, sites } = data;
   if (!farm) {
     return (
       <Screen>
@@ -73,18 +44,25 @@ export default function Home() {
     <Screen>
       <Heading>{farm.name}</Heading>
 
-      <Text style={styles.section}>Fields</Text>
-      {fields.length === 0 && <Body>No fields yet. Add the fields you farm.</Body>}
-      {fields.map((field) => (
-        <View key={field.id} style={styles.item}>
-          <Text style={styles.itemText}>{field.name}</Text>
-          <Text style={styles.itemMeta}>{formatArea(field.area_hectares, farm)}</Text>
-        </View>
-      ))}
+      <Text style={styles.section}>Sites</Text>
+      {sites.length === 0 && <Body>Add each piece of land you farm as a site, then add its fields.</Body>}
+      {sites.map((site) => {
+        const fieldCount = site.fields[0]?.count ?? 0;
+        return (
+          <Link key={site.id} href={{ pathname: '/sites/[id]', params: { id: site.id } }} asChild>
+            <Pressable style={styles.item} accessibilityRole="button">
+              <Text style={styles.itemText}>{site.name}</Text>
+              <Text style={styles.itemMeta}>
+                {[site.community, `${fieldCount} ${fieldCount === 1 ? 'field' : 'fields'}`].filter(Boolean).join(' · ')}
+              </Text>
+            </Pressable>
+          </Link>
+        );
+      })}
       <Button
-        title="Add a field"
+        title="Add a site"
         variant="secondary"
-        onPress={() => router.push({ pathname: '/fields/new', params: { farmId: farm.id, unit: farm.area_unit } })}
+        onPress={() => router.push({ pathname: '/sites/new', params: { farmId: farm.id } })}
       />
 
       <Text style={styles.section}>Log a farm activity</Text>
