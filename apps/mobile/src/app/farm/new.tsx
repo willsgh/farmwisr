@@ -2,28 +2,21 @@ import type { AreaUnit } from '@farmwisr/core';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Body, Button, Choice, ErrorText, Field, Screen } from '../../components/ui';
-import { createFarm } from '../../lib/farms';
+import { createFarm } from '../../lib/data';
 
 export default function NewFarm() {
   const [name, setName] = useState('');
   const [unit, setUnit] = useState<AreaUnit>('acre');
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function save() {
+  function save() {
     if (!name.trim()) {
       setError('Give your farm a name.');
       return;
     }
-    setBusy(true);
-    setError(null);
-    try {
-      await createFarm(name.trim(), unit);
-      router.back();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save the farm.');
-      setBusy(false);
-    }
+    // Saved on the device straight away; it syncs to the server when there is signal.
+    createFarm(name.trim(), unit);
+    router.back();
   }
 
   return (
@@ -39,7 +32,7 @@ export default function NewFarm() {
         onChange={setUnit}
       />
       {error && <ErrorText>{error}</ErrorText>}
-      <Button title="Save farm" onPress={save} busy={busy} />
+      <Button title="Save farm" onPress={save} />
     </Screen>
   );
 }

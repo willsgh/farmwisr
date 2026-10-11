@@ -13,7 +13,14 @@ insert into public.activities (season_id, stage, type, activity_date) select id,
 insert into public.activity_costs (activity_id, category, amount_minor) select id, 'equipment', 30000 from public.activities;
 insert into public.activity_costs (activity_id, category, amount_minor) select id, 'labour', 10000 from public.activities;
 
+-- The app retries queued offline changes as upserts on id; a retry must succeed and not duplicate.
+insert into public.sites (id, farm_id, name) values ('bbbbbbbb-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'Retry site')
+  on conflict (id) do update set name = excluded.name;
+insert into public.sites (id, farm_id, name) values ('bbbbbbbb-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'Retry site')
+  on conflict (id) do update set name = excluded.name;
+
 do $$ begin
+  assert (select count(*) from public.sites where name = 'Retry site') = 1, 'a retried upsert must not duplicate';
   assert (select total_cost_minor from public.season_summaries) = 40000, 'season total should be 40000';
   assert (select cost_per_hectare_minor from public.season_summaries) = 20000, 'cost per hectare should be 20000';
 end $$;

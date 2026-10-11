@@ -1,27 +1,17 @@
 import { SEASON_STAGES, STAGE_LABELS, formatMoney, summariseSeason, toHectares } from '@farmwisr/core';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Body, Card, ErrorText, Screen, Section, colors } from '../../components/ui';
-import { getMyFarm } from '../../lib/farms';
-import { getField, getSeason, listActivities } from '../../lib/seasons';
-import { useFocusLoad } from '../../lib/useFocusLoad';
+import { Body, Card, Screen, Section, colors } from '../../components/ui';
+import { useFarmData } from '../../lib/data';
 
 export default function SeasonScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data, error } = useFocusLoad(async () => {
-    const [farm, season, activities] = await Promise.all([getMyFarm(), getSeason(id), listActivities(id)]);
-    const field = await getField(season.field_id);
-    return { farm, season, field, activities };
-  }, id);
+  const data = useFarmData();
+  const { farm } = data;
+  const season = data.season(id);
+  const field = season ? data.field(season.field_id) : null;
 
-  if (error) {
-    return (
-      <Screen>
-        <ErrorText>{error}</ErrorText>
-      </Screen>
-    );
-  }
-  if (!data || !data.farm) {
+  if (!data.loaded) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.primary} />
@@ -29,7 +19,14 @@ export default function SeasonScreen() {
     );
   }
 
-  const { farm, season, field, activities } = data;
+  if (!farm || !season || !field) {
+    return (
+      <Screen>
+        <Body>This season is not on this device.</Body>
+      </Screen>
+    );
+  }
+  const activities = data.activitiesOf(season.id);
   const summary = summariseSeason(
     activities,
     field.area_hectares ? { value: field.area_hectares, unit: 'hectare' } : undefined,

@@ -1,26 +1,16 @@
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Body, Button, ErrorText, Screen, colors } from '../../components/ui';
-import { getMyFarm, getSite, listFields } from '../../lib/farms';
+import { Body, Button, Screen, colors } from '../../components/ui';
+import { useFarmData } from '../../lib/data';
 import { formatArea } from '../../lib/format';
-import { useFocusLoad } from '../../lib/useFocusLoad';
 
 export default function SiteScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data, error } = useFocusLoad(async () => {
-    const [farm, site, fields] = await Promise.all([getMyFarm(), getSite(id), listFields(id)]);
-    return { farm, site, fields };
-  }, id);
+  const data = useFarmData();
+  const { farm } = data;
+  const site = data.site(id);
 
-  if (error) {
-    return (
-      <Screen>
-        <ErrorText>{error}</ErrorText>
-      </Screen>
-    );
-  }
-
-  if (!data || !data.farm) {
+  if (!data.loaded) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.primary} />
@@ -28,7 +18,14 @@ export default function SiteScreen() {
     );
   }
 
-  const { farm, site, fields } = data;
+  if (!farm || !site) {
+    return (
+      <Screen>
+        <Body>This site is not on this device.</Body>
+      </Screen>
+    );
+  }
+  const fields = data.fieldsOf(site.id);
   return (
     <Screen>
       <Stack.Screen options={{ title: site.name }} />

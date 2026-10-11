@@ -2,7 +2,7 @@ import { COMMON_CROPS, isIsoDate, todayIso } from '@farmwisr/core';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Button, Chips, ErrorText, Field, Screen, Section } from '../../components/ui';
-import { createSeason } from '../../lib/seasons';
+import { createSeason } from '../../lib/data';
 
 export default function NewSeason() {
   const { fieldId } = useLocalSearchParams<{ fieldId: string }>();
@@ -10,10 +10,9 @@ export default function NewSeason() {
   const [otherCrop, setOtherCrop] = useState('');
   const [variety, setVariety] = useState('');
   const [startDate, setStartDate] = useState(todayIso());
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function save() {
+  function save() {
     const crop = pickedCrop ?? otherCrop.trim();
     if (!crop) {
       setError('Pick or type the crop.');
@@ -23,15 +22,9 @@ export default function NewSeason() {
       setError('Enter the start date as YYYY-MM-DD, for example 2026-04-01.');
       return;
     }
-    setBusy(true);
-    setError(null);
-    try {
-      const season = await createSeason({ fieldId, crop, variety: variety.trim() || null, startDate });
-      router.replace({ pathname: '/seasons/[id]', params: { id: season.id } });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not start the season.');
-      setBusy(false);
-    }
+    // Saved on the device straight away; it syncs to the server when there is signal.
+    const seasonId = createSeason({ fieldId, crop, variety: variety.trim() || null, startDate });
+    router.replace({ pathname: '/seasons/[id]', params: { id: seasonId } });
   }
 
   return (
@@ -49,7 +42,7 @@ export default function NewSeason() {
       <Field label="Variety (optional)" value={variety} onChangeText={setVariety} placeholder="e.g. Obatanpa" />
       <Field label="Start date" value={startDate} onChangeText={setStartDate} placeholder="YYYY-MM-DD" />
       {error && <ErrorText>{error}</ErrorText>}
-      <Button title="Start season" onPress={save} busy={busy} />
+      <Button title="Start season" onPress={save} />
     </Screen>
   );
 }
